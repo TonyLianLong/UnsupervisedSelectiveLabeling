@@ -1,0 +1,13 @@
+RUN_NAME: 'cifar10_random'
+
+SKIP_SAVE: False
+RECOMPUTE_ALL: True
+RECOMPUTE_NUM_DEP: True
+
+DATASET:
+  NAME: 'cifar10'
+  TRANSFORM_NAME: 'CLD-cifar10'
+
+RANDOM:
+  SEEDS: [1, 2, 3, 4, 5]
+  NUM_SELECTED_SAMPLES: 40
