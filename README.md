@@ -1,7 +1,7 @@
 # Unsupervised Selective Labeling for More Effective Semi-Supervised Learning
 by [Xudong Wang*](https://people.eecs.berkeley.edu/~xdwang/), [Long Lian*](https://tonylian.com/), and [Stella X. Yu](http://www1.icsi.berkeley.edu/~stellayu/) at UC Berkeley/ICSI. (*: co-first authors)
 
-[Preprint](https://arxiv.org/abs/2110.03006v3) | [Citation](#citation)
+[Preprint](https://arxiv.org/abs/2110.03006) | [Citation](#citation)
 
 *European Conference on Computer Vision*, 2022.
 
