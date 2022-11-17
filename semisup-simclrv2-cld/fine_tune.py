@@ -58,7 +58,7 @@ train_dataloader = DataLoader(train_dataset_cifar, num_workers=cfg.DATALOADER.WO
                               drop_last=True, shuffle=True)
 val_dataloader = DataLoader(val_dataset, num_workers=cfg.DATALOADER.WORKERS,
                             batch_size=cfg.DATALOADER.BATCH_SIZE, pin_memory=True,
-                            drop_last=True, shuffle=True)
+                            drop_last=False, shuffle=False)
 
 train_targets = torch.tensor(train_dataset_cifar.targets)
 
