@@ -1,0 +1,24 @@
+RUN_NAME: 'imagenet_usl_moco_0.2'
+
+SKIP_SAVE: False
+RECOMPUTE_ALL: False
+RECOMPUTE_NUM_DEP: False
+
+DATASET:
+  NAME: 'imagenet'
+  TRANSFORM_NAME: 'imagenet'
+  ROOT_DIR: '../data/ImageNet'
+
+MODEL:
+  ARCH: 'resnet50'
+  PRETRAIN_PATH: 'pretrained/res50_moco_eman_800ep.pth.tar'
+
+USL:
+  NUM_SELECTED_SAMPLES: 2911
+  KNN_K: 20
+  SEEDS: [0]
+  K_MEANS_NITERS: 100
+  REG:
+    W: 1.5
+    NITERS: 2
+    MOMENTUM: 0.0

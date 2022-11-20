@@ -4,7 +4,6 @@ import time
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 import torchvision.transforms as transforms
 
@@ -15,6 +14,8 @@ from copy import deepcopy
 from .config_utils import cfg, logger
 
 # Credit: https://github.com/kekmodel/FixMatch-pytorch
+
+
 class ModelEMA(object):
     def __init__(self, model, decay):
         self.ema = deepcopy(model)
@@ -53,7 +54,7 @@ class ModelEMA(object):
 def seed_everything(seed):
     if seed is None:
         return
-    
+
     import os
     import random
 
@@ -96,7 +97,8 @@ normalization_kwargs_dict = {
     "SCAN-cifar10": dict(mean=(0.4914, 0.4822, 0.4465), std=(0.2023, 0.1994, 0.2010)),
     "SCAN-cifar100": dict(mean=(0.5071, 0.4867, 0.4408), std=(0.2675, 0.2565, 0.2761)),
 
-    "imagenet": dict(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
+    "imagenet": dict(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+    "imagenet100": dict(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
 }
 
 
@@ -106,16 +108,25 @@ def get_transform(transform_name):
     else:
         raise ValueError(f"Unsupported transform type: {transform_name}")
 
-    transform_test = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(**normalization_kwargs),
-    ])
+    if "imagenet" in transform_name:
+        transform_test = transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize(**normalization_kwargs),
+        ])
+    else:
+        transform_test = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(**normalization_kwargs),
+        ])
 
     return transform_test
 
 
 def single_model(state_dict):
     return {k.replace("module.", ""): v for k, v in state_dict.items()}
+
 
 def get_feats_list(model, train_memory_loader, CLIP=False, feat_dim=None, recompute=False, dataparallel=False, force_no_extra_kwargs=False, **kwargs):
     if recompute:
@@ -188,7 +199,7 @@ def kNN(x_train, x_test, K=20):
 
 
 def partitioned_kNN(feats_list, K=20, recompute=False, partitions_size=130000, verify=False):
-    suffix = "" if K == 200 or K == 20 else "_{}".format(K)
+    suffix = "" if K == 20 else "_{}".format(K)
     if recompute:
         partitions = int(np.ceil(feats_list.shape[0] / partitions_size))
 
@@ -337,19 +348,6 @@ def KMeans(x, seed, K=10, Niter=10, init_inds=None, verbose=True, force_no_lazy_
     return cl, c
 
 
-def get_sample_info_cifar(chosen_sample_num):
-    num_centroids = chosen_sample_num
-    final_sample_num = chosen_sample_num
-
-    # We get one more centroid to take empty clusters into account
-    if chosen_sample_num == 2500:
-        num_centroids = 2501
-        final_sample_num = 2500
-        logger.warning("Returning 2501 as the number of centroids")
-
-    return num_centroids, final_sample_num
-
-
 def run_kMeans(feats_list, num_centroids, final_sample_num, Niter, recompute=False, use_cuda=True, seed=None, force_no_lazy_tensor=False, save=True):
     seed_suffix = "_{}".format(seed) if seed is not None else ""
     if recompute:
@@ -373,65 +371,6 @@ def run_kMeans(feats_list, num_centroids, final_sample_num, Niter, recompute=Fal
             load_npy("centroids_{}{}.npy".format(final_sample_num, seed_suffix)))
 
     return cluster_labels, centroids
-
-
-def get_selection_with_reg(data, neighbors_dist, cluster_labels, num_centroids, final_sample_num, iters=1, w=1, momentum=0.5, horizon_dist=None, alpha=1, verbose=False):
-    selection_regularizer = torch.zeros_like(neighbors_dist)
-    selected_ids_comparison_mask = F.one_hot(
-        cluster_labels, num_classes=final_sample_num)
-    for _ in tqdm(range(iters)):
-        selected_inds = []
-        for cls_ind in range(num_centroids):
-            if len(selected_inds) == final_sample_num:
-                break
-            match_arr = cluster_labels == cls_ind
-            match = torch.where(match_arr)[0]
-            if len(match) == 0:
-                continue
-
-            # Scores in the selection process
-            scores = 1 / neighbors_dist[match_arr] - \
-                w * selection_regularizer[match_arr]
-            min_dist_ind = scores.argmax()
-            selected_inds.append(match[min_dist_ind])
-
-        selected_inds = np.array(selected_inds)
-        selected_data = data[selected_inds]
-        # This is square distances: (N_full, N_selected)
-        # data: (N_full, 1, dim)
-        # selected_data: (1, N_selected, dim)
-        new_selection_regularizer = (
-            (data[:, None, :] - selected_data[None, :, :]) ** 2).sum(dim=-1)
-
-        if verbose:
-            logger.info(
-                f"Max: {new_selection_regularizer.max()} Mean: {new_selection_regularizer.mean()}")
-
-        # Distance to the instance within the same cluster should be ignored
-        new_selection_regularizer = (1 - selected_ids_comparison_mask) * \
-            new_selection_regularizer + selected_ids_comparison_mask * 1e10
-
-        assert not torch.any(new_selection_regularizer == 0), "{}".format(
-            torch.where(new_selection_regularizer == 0))
-
-        if verbose:
-            logger.info(f"Min: {new_selection_regularizer.min()}")
-
-        # If it is outside of horizon dist (square distance), than we ignore it.
-        if horizon_dist is not None:
-            new_selection_regularizer[new_selection_regularizer >=
-                                      horizon_dist] = 1e10
-
-        # selection_regularizer: N_full
-        new_selection_regularizer = (
-            1 / new_selection_regularizer ** alpha).sum(dim=1)
-
-        selection_regularizer = selection_regularizer * \
-            momentum + new_selection_regularizer * (1 - momentum)
-
-    assert len(
-        selected_inds) == final_sample_num, f"{len(selected_inds)} != {final_sample_num}"
-    return selected_inds
 
 
 def get_selection_without_reg(cluster_labels, neighbors_dist, centroid_ordering, final_sample_num):

@@ -1,0 +1,27 @@
+RUN_NAME: 'imagenet_usl_clip_0.2'
+
+SKIP_SAVE: False
+RECOMPUTE_ALL: False
+RECOMPUTE_NUM_DEP: False
+
+DATASET:
+  NAME: 'imagenet'
+  TRANSFORM_NAME: 'imagenet'
+  ROOT_DIR: '../data/ImageNet'
+
+MODEL:
+  ARCH: 'CLIP-ViT-B/16'
+
+USL:
+  NUM_SELECTED_SAMPLES: 2911
+  KNN_K: 20
+  SEEDS: [0]
+  K_MEANS_NITERS: 100
+  REG:
+    # CLIP has a larger dimension on feats and should have a lower adjustment weight
+    W: 0.05
+    NITERS: 2
+    MOMENTUM: 0.0
+    HORIZON_NUM: 32
+    ALPHA: 1.0
+    EXCLUDE_SAME_CLUSTER: True

@@ -1,9 +1,9 @@
 # Unsupervised Selective Labeling for More Effective Semi-Supervised Learning
 by [Xudong Wang*](https://people.eecs.berkeley.edu/~xdwang/), [Long Lian*](https://tonylian.com/), and [Stella X. Yu](http://www1.icsi.berkeley.edu/~stellayu/) at UC Berkeley/ICSI. (*: co-first authors)
 
-[Arxiv Paper](https://arxiv.org/abs/2110.03006) | [ECCV Paper](https://www.ecva.net/papers/eccv_2022/papers_ECCV/papers/136900423.pdf) | [Citation](#citation)
+[Arxiv Paper](https://arxiv.org/abs/2110.03006) | [ECCV Paper](https://www.ecva.net/papers/eccv_2022/papers_ECCV/papers/136900423.pdf) | [**Poster**](https://people.eecs.berkeley.edu/~longlian/usl_poster.pdf) | [**Video**](https://people.eecs.berkeley.edu/~longlian/usl_video.html) | [Citation](#citation)
 
-*European Conference on Computer Vision*, 2022.
+*European Conference on Computer Vision* (ECCV), 2022.
 
 This work is also presented in [CV in the Wild workshop](https://computer-vision-in-the-wild.github.io/eccv-2022/) in ECCV 2022.
 
@@ -14,8 +14,10 @@ This repository contains the code for USL on CIFAR. Other implementations are co
 For further information regarding the paper, please contact [Xudong Wang](mailto:xdwang@eecs.berkeley.edu). For information regarding the code and implementation, please contact [Long Lian](mailto:longlian@berkeley.edu).
 
 ## News
-* 11/17/22 Provided CLD pretrained model and reference selections
-* 07/20/22 Initial Implementation
+* **Poster** and **video** are added (see above)
+* ImageNet scripts, intermediate results, final results, and FixMatch checkpoints are added
+* Provided CLD pretrained model and reference selections
+* Initial Implementation
 
 ## Supported Methods
 - [x] USL
@@ -24,6 +26,20 @@ For further information regarding the paper, please contact [Xudong Wang](mailto
 - [x] FixMatch
 - [x] SimCLRv2
 - [x] SimCLRv2-CLD
+
+## Preparation
+Install the required packages:
+```
+pip install -r requirements.txt
+```
+
+You also need to install `clip` if you want to use `clip` models:
+```
+pip install ftfy regex tqdm
+pip install git+https://github.com/openai/CLIP.git
+```
+
+For ImageNet, you need to change the data path to your data path in the config. For CIFAR, it will download the data automatically.
 
 ## Run USL
 ### CIFAR-10
@@ -47,7 +63,73 @@ cd semisup-simclrv2-cld
 python fine_tune.py
 ```
 
+### ImageNet
+#### Download our CLD pretrained model on ImageNet for USL (USL-MoCo only)
+```
+mkdir selective_labeling/pretrained
+cd selective_labeling/pretrained
+# MoCov2 checkpoint on ImageNet (with EMAN as normalization)
+wget https://eman-cvpr.s3.amazonaws.com/models/res50_moco_eman_800ep.pth.tar
+```
+
+CLIP models will be downloaded at the first run with USL-CLIP config.
+
+#### Use pre-computed intermediate results (Recommended)
+This step is optional but recommended to refrain from recomputing the feature from the dataset. Furthermore, it relieves the non-deterministic behavior from obtaining feature, kNN, and clustering, since GPU ops lead to non-deterministic behavior (even though seed is set), which is more prominent for large datasets where more compute is used.
+
+We provide intermediate results after obtaining feature, kNN, k-Means, and the final selected indices in numpy and csv format. Intermediate results can be obtained by:
+<details>
+<summary>USL-MoCo experiments</summary>
+
+```
+mkdir -p selective_labeling/saved/imagenet_usl_moco_0.2
+cd selective_labeling/saved/imagenet_usl_moco_0.2
+wget https://people.eecs.berkeley.edu/~longlian/files/usl_imagenet_moco_0.2_intermediate.zip
+unzip usl_imagenet_moco_0.2_intermediate.zip
+cd ../../..
+```
+
+Please also download the precomputed MoCov2 feature [here](https://drive.google.com/file/d/1r8hJ_tuQ7Eta2eVTmZQT1W59FzLkvDZ3/view?usp=share_link) and unzip `memory_feats_list.npy` into `selective_labeling/saved/imagenet_usl_moco_0.2`.
+
+</details>
+
+<details>
+<summary>USL-CLIP experiments</summary>
+
+```
+mkdir -p selective_labeling/saved/imagenet_usl_clip_0.2
+cd selective_labeling/saved/imagenet_usl_clip_0.2
+wget https://people.eecs.berkeley.edu/~longlian/files/usl_imagenet_clip_0.2_intermediate.zip
+unzip usl_imagenet_clip_0.2_intermediate.zip
+cd ../../..
+```
+
+Please also download the precomputed CLIP feature [here](https://drive.google.com/file/d/1V47BFvWs9uQYO_sOGDqj3RrslMwjaEsO/view?usp=share_link) and unzip `memory_feats_list.npy` into `selective_labeling/saved/imagenet_usl_clip_0.2`.
+
+</details>
+
+You can also obtain the intermediate and final results [here](https://people.eecs.berkeley.edu/~longlian/files/usl_imagenet.html).
+
+If this step is skipped (i.e., compute everything from scratch), `RECOMPUTE_ALL` and `RECOMPUTE_NUM_DEP` need to be set to True in the config.
+
+#### Perform USL on ImageNet
+##### USL-MoCo experiments
+```
+cd selective_labeling
+python usl-imagenet.py
+```
+
+##### USL-CLIP experiments
+```
+cd selective_labeling
+python usl-imagenet.py --cfg configs/ImageNet_usl_clip_0.2.yaml
+```
+
+#### Evaluate USL on ImageNet with FixMatch
+Use the script [here](https://github.com/amazon-science/exponential-moving-average-normalization). The output `csv` file is compatible with the split of labeled dataset.
+
 ## Samples selected by USL
+### CIFAR-10
 Note that both USL and USL-T have some randomness due to non-deterministic computations in GPU and could vary between each run or server, despite setting the seed. Therefore, we release samples selected by USL run on our end.
 
 These are the instance indices by the torch CIFAR-10 dataset.
@@ -125,6 +207,12 @@ Seed 3 and 4 are not selected because seed 3 and seed 4 do not lead to instances
 Note that these can be obtained by `selective_labeling/usl-cifar.py`.
 </details>
 
+### ImageNet
+The random selection and USL selected samples on ImageNet (in `csv` format) could be obtained [here](https://people.eecs.berkeley.edu/~longlian/files/usl_imagenet.html).
+
+### Model Zoo
+You can obtain the EMAN-FixMatch pretrained model [here](https://people.eecs.berkeley.edu/~longlian/files/usl_imagenet.html).
+
 ## Citation
 If you find our work inspiring or use our codebase in your research, please consider giving a star ⭐ and a citation.
 
@@ -140,7 +228,7 @@ If you find our work inspiring or use our codebase in your research, please cons
 ```
 
 ## How to get support from us?
-If you have any general questions about this implementation, feel free to email us at `longlian at berkeley.edu` and `xdwang at eecs.berkeley.edu`.
+This is a re-implementation of our original codebase. If you have any general questions about this implementation, feel free to email us at `longlian at berkeley.edu` and `xdwang at eecs.berkeley.edu`.
 
 ## License
 This project is licensed under the MIT license. See [LICENSE](LICENSE) for more details. The parts described below follow their original license.
