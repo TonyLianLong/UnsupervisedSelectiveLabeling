@@ -14,6 +14,7 @@ This repository contains the code for USL on CIFAR. Other implementations are co
 For further information regarding the paper, please contact [Xudong Wang](mailto:xdwang@eecs.berkeley.edu). For information regarding the code and implementation, please contact [Long Lian](mailto:longlian@berkeley.edu).
 
 ## News
+* Selected sample indices on USL-T are added for reference (note that USL-T is training-based and thus gives different results on different runs)
 * **Poster** and **video** are added (see above)
 * ImageNet scripts, intermediate results, final results, and FixMatch checkpoints are added
 * Provided CLD pretrained model and reference selections
@@ -207,11 +208,25 @@ Seed 3 and 4 are not selected because seed 3 and seed 4 do not lead to instances
 Note that these can be obtained by `selective_labeling/usl-cifar.py`.
 </details>
 
+<details>
+<summary>USL-T indices on CIFAR-10</summary>
+Class distribution [4, 4, 4, 4, 4, 4, 4, 4, 4, 4]:
+
+```
+[7998, 45774, 27115, 8389, 28558, 8454, 12390, 42528, 28249, 
+12885, 25101, 39912, 19571, 7904, 43637, 3267, 6935, 21794, 
+24489, 13999, 24554, 19979, 1573, 36597, 5403, 44836, 29500, 
+16935, 9408, 47504, 35673, 20778, 44636, 37123, 49130, 8086, 
+39994, 8499, 48597, 7753]
+```
+
+</details>
+
 ### ImageNet
 The random selection and USL selected samples on ImageNet (in `csv` format) could be obtained [here](https://people.eecs.berkeley.edu/~longlian/files/usl_imagenet.html).
 
 ### Model Zoo
-You can obtain the EMAN-FixMatch pretrained model [here](https://people.eecs.berkeley.edu/~longlian/files/usl_imagenet.html).
+You can obtain the EMAN-FixMatch trained model [here](https://people.eecs.berkeley.edu/~longlian/files/usl_imagenet.html).
 
 ## Citation
 If you find our work inspiring or use our codebase in your research, please consider giving a star ⭐ and a citation.
