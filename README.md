@@ -11,6 +11,10 @@ This work is also presented in [CV in the Wild workshop](https://computer-vision
 
 This repository contains the code for USL on CIFAR. Other implementations are coming soon.
 
+Note that even if you only work on proposing new SSL methods, **you can try our unsupervised selected samples as the labeled data with your SSL methods to get a free boost with the same number of labeled samples.** We have pre-extracted the labeled split and nothing is needed to run.
+
+Our unsupervised selection is available in a plug-and-play format for CIFAR and ImageNet [here](#samples-selected-by-usl-and-usl-t). We have shown that our method works off-the-shelf with SimCLR, SimCLR-CLD, FixMatch, MixMatch, CoMatch, etc and it should also work for other newer methods.
+
 For further information regarding the paper, please contact [Xudong Wang](mailto:xdwang@eecs.berkeley.edu). For information regarding the code and implementation, please contact [Long Lian](mailto:longlian@berkeley.edu).
 
 ## News
