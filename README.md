@@ -14,6 +14,7 @@ This repository contains the code for USL on CIFAR. Other implementations are co
 For further information regarding the paper, please contact [Xudong Wang](mailto:xdwang@eecs.berkeley.edu). For information regarding the code and implementation, please contact [Long Lian](mailto:longlian@berkeley.edu).
 
 ## News
+* **USL-T is fully supported** in this implementation. Pretraining weights and trained models are available.
 * Selected sample indices on USL-T are added for reference (note that USL-T is training-based and thus gives different results on different runs)
 * **Poster** and **video** are added (see above)
 * ImageNet scripts, intermediate results, final results, and FixMatch checkpoints are added
@@ -22,11 +23,18 @@ For further information regarding the paper, please contact [Xudong Wang](mailto
 
 ## Supported Methods
 - [x] USL
+- [x] USL-T
 
 ## Supported SSL Methods
 - [x] FixMatch
 - [x] SimCLRv2
 - [x] SimCLRv2-CLD
+
+## Supported Datasets
+- [x] CIFAR-10
+- [x] CIFAR-100
+- [x] ImageNet100
+- [x] ImageNet
 
 ## Preparation
 Install the required packages:
@@ -43,25 +51,34 @@ pip install git+https://github.com/openai/CLIP.git
 For ImageNet, you need to change the data path to your data path in the config. For CIFAR, it will download the data automatically.
 
 ## Run USL
-### CIFAR-10
+### CIFAR-10/100
 #### Download our CLD pretrained model on CIFAR for USL
-```
+```shell
 mkdir selective_labeling/pretrained
 cd selective_labeling/pretrained
 # CLD checkpoint on CIFAR-10
 wget https://people.eecs.berkeley.edu/~longlian/files/cifar10_ckpt_epoch_200.pth
+# CLD checkpoint on CIFAR-100
+wget https://people.eecs.berkeley.edu/~longlian/files/cifar100_ckpt_epoch_200.pth
 ```
 
-#### Perform USL on CIFAR-10
-```
+#### Perform USL on CIFAR-10/100
+```shell
 cd selective_labeling
-python usl-cifar.py
+# CIFAR-10
+python usl-cifar.py --cfg configs/cifar10_usl.yaml
+# CIFAR-100
+python usl-cifar.py --cfg configs/cifar100_usl.yaml
 ```
 
-#### Evaluate USL on CIFAR-10 with SimCLRv2-CLD
-```
+#### Evaluate USL on CIFAR-10/100 with SimCLRv2-CLD
+You can also find the config for SimCLR in `semisup-simclrv2-cld/configs`. The implementation for FixMatch is in `semisup-fixmatch-cifar`.
+```shell
 cd semisup-simclrv2-cld
-python fine_tune.py
+# CIFAR-10
+python fine_tune.py --cfg semisup-simclrv2-cld/configs/cifar10_usl-t_finetune.yaml
+# CIFAR-100
+python fine_tune.py --cfg semisup-simclrv2-cld/configs/cifar100_usl-t_finetune.yaml
 ```
 
 ### ImageNet
@@ -129,7 +146,84 @@ python usl-imagenet.py --cfg configs/ImageNet_usl_clip_0.2.yaml
 #### Evaluate USL on ImageNet with FixMatch
 Use the script [here](https://github.com/amazon-science/exponential-moving-average-normalization). The output `csv` file is compatible with the split of labeled dataset.
 
-## Samples selected by USL
+## Run USL-T
+To make our results more comparable, we release our selected indices and trained models, see [model zoo](#model-zoo) below.
+### CIFAR-10/100
+#### Download models trained with unsupervised learning methods
+```
+mkdir -p usl-t_pretraining/pretrained
+wget https://people.eecs.berkeley.edu/~longlian/files/pretrained_kNN_cifar10.tgz
+tar zxvf pretrained_kNN_cifar10.tgz
+
+wget https://people.eecs.berkeley.edu/~longlian/files/pretrained_kNN_cifar100.tgz
+tar zxvf pretrained_kNN_cifar100.tgz
+```
+#### Perform USL-T (training and sample selection)
+* USL-T Training (also called pretraining because it is prior to training in semi-supervised learning):
+```
+cd usl-t_pretraining
+# CIFAR-10
+python usl-t-cifar-pretrain.py --cfg configs/cifar10_usl-t_pretrain.yaml
+# CIFAR-100
+python usl-t-cifar-pretrain.py --cfg configs/cifar100_usl-t_pretrain.yaml
+cd ..
+```
+* Sample selection:
+```
+cd ../selective_labeling
+# CIFAR-10
+python usl-t-cifar.py --cfg configs/cifar10_usl-t.yaml
+# CIFAR-100
+python usl-t-cifar.py --cfg configs/cifar100_usl-t.yaml
+cd ..
+```
+#### Evaluate USL-T on CIFAR-10/100 on SimCLR-CLD
+```
+# CIFAR-10
+python fine_tune.py --cfg configs/cifar10_usl-t_finetune.yaml
+# CIFAR-100
+python fine_tune.py --cfg configs/cifar100_usl-t_finetune.yaml
+```
+### ImageNet
+#### Download models trained with unsupervised learning methods
+```
+mkdir -p usl-t_pretraining/pretrained
+wget https://people.eecs.berkeley.edu/~longlian/files/pretrained_kNN_imagenet.tgz
+tar zxvf pretrained_kNN_imagenet.tgz
+
+wget https://people.eecs.berkeley.edu/~longlian/files/pretrained_kNN_imagenet100.tgz
+tar zxvf pretrained_kNN_imagenet100.tgz
+```
+#### Perform USL-T (training and sample selection)
+* Training:
+```
+cd usl-t_pretraining
+# ImageNet100
+python usl-t-imagenet-pretrain.py --cfg configs/ImageNet100_usl-t_pretrain.yaml
+# ImageNet
+python usl-t-imagenet-pretrain.py --cfg configs/ImageNet_usl-t_pretrain.yaml
+cd ..
+```
+* Sample selection:
+```
+cd ../selective_labeling
+# CIFAR-10
+python usl-t-imagenet.py --cfg ImageNet100_usl-t_0.3.yaml
+# CIFAR-100
+python usl-t-imagenet.py --cfg ImageNet_usl-t_0.2.yaml
+cd ..
+```
+#### Evaluate USL-T on ImageNet100/ImageNet with SimCLR
+* SimCLR weights `r50_1x_sk0.pth` can be downloaded at [here](https://people.eecs.berkeley.edu/~longlian/files/r50_1x_sk0.pth.tgz) and should be put under pretrained.
+```
+cd semisup-simclrv2
+# ImageNet-100
+python fine_tune.py --lr 0.16 --seed 0 --name-to-save "usl-t_0.3p_imagenet100" --trainindex_x "[path to train_0.3p_gen_imagenet100_usl-t_0.3_index.csv]" -j 16 --batch-size 256 --eval-freq 48 --epochs 48 --warmup-epochs 0 --weight-decay 0.0001 --dist-url 'tcp://localhost:10005' --multiprocessing-distributed --world-size 1 --rank 0 --pretrain pretrained/r50_1x_sk0.pth --roll-data 20 --amp-opt-level O1 --roll-data 40 --num-classes 100 --freeze-backbone [Path to ImageNet 100]
+
+# ImageNet
+python fine_tune.py --lr 0.16 --seed 0 --name-to-save "usl-t_0.2p_imagenet" --trainindex_x "[path to train_0.2p_gen_imagenet_usl-t_0.2_index.csv]" -j 16 --batch-size 512 --eval-freq 6 --epochs 12 --warmup-epochs 0 --weight-decay 0 --dist-url 'tcp://localhost:10001' --multiprocessing-distributed --world-size 1 --rank 0 --pretrain pretrained/r50_1x_sk0.pth --multi-epochs-data-loader --amp-opt-level O1 --no-lr-decay [Path to ImageNet]
+```
+## Samples selected by USL and USL-T
 ### CIFAR-10
 Note that both USL and USL-T have some randomness due to non-deterministic computations in GPU and could vary between each run or server, despite setting the seed. Therefore, we release samples selected by USL run on our end.
 
@@ -224,9 +318,32 @@ Class distribution [4, 4, 4, 4, 4, 4, 4, 4, 4, 4]:
 
 ### ImageNet
 The random selection and USL selected samples on ImageNet (in `csv` format) could be obtained [here](https://people.eecs.berkeley.edu/~longlian/files/usl_imagenet.html).
+**Update**: USL-T selected samples on ImageNet is available at [here](https://people.eecs.berkeley.edu/~longlian/files/usl_t_imagenet_0.2_selected_indices.zip). 
 
-### Model Zoo
-You can obtain the EMAN-FixMatch trained model [here](https://people.eecs.berkeley.edu/~longlian/files/usl_imagenet.html).
+## Model Zoo
+
+### USL
+Note that USL does not require training, so the weights are just pretraining weights (e.g., with MoCo/SimCLR/CLD).
+
+| Dataset   | Models for Sample Selection |
+|-----------|-----------------------------|
+| CIFAR-10  | [Download (CLD)](https://people.eecs.berkeley.edu/~longlian/files/cifar10_ckpt_epoch_200.pth)              |
+| CIFAR-100 | [Download (CLD)](https://people.eecs.berkeley.edu/~longlian/files/cifar100_ckpt_epoch_200.pth)             |
+| ImageNet  | [Download (MoCov2-EMAN)](https://eman-cvpr.s3.amazonaws.com/models/res50_moco_eman_800ep.pth.tar)            |
+
+These weights can be directly parsed by `selective_labeling/usl-{cifar,imagenet}.py` to get selections. The selection should match with the selections released (besides slight variations due to indeterministic operations in GPUs).
+
+#### FixMatch SSL Trained Model for USL
+You can obtain the EMAN-FixMatch trained model for baselines/Stratified/USL-MoCo/USL-CLIP on ImageNet [here](https://people.eecs.berkeley.edu/~longlian/files/usl_imagenet.html).
+
+### USL-T
+| Dataset   | Models for Sample Selection |
+|-----------|-----------------------------|
+| CIFAR-10  | [Download](https://people.eecs.berkeley.edu/~longlian/files/cifar10_usl_t_3_heads.pth)                    |
+| CIFAR-100 | [Download](https://people.eecs.berkeley.edu/~longlian/files/cifar100_usl_t_3_heads.pth)                    |
+| ImageNet  | [Download](https://people.eecs.berkeley.edu/~longlian/files/imagenet_usl_t_3_heads.pth)                    |
+
+These weights can be directly parsed by `selective_labeling/usl-t-{cifar,imagenet}.py` to get selections. The selection should mostly match with the selections released (besides slight variations due to indeterministic operations in GPUs).
 
 ## Citation
 If you find our work inspiring or use our codebase in your research, please consider giving a star ⭐ and a citation.
@@ -243,7 +360,9 @@ If you find our work inspiring or use our codebase in your research, please cons
 ```
 
 ## How to get support from us?
-This is a re-implementation of our original codebase. If you have any general questions about this implementation, feel free to email us at `longlian at berkeley.edu` and `xdwang at eecs.berkeley.edu`.
+This is a re-implementation of our original codebase. If you have any questions about the implementation in this repo, feel free to email us at `longlian at berkeley.edu`.
+
+I'm also happy to provide additional checkpoints for baselines and selected labels.
 
 ## License
 This project is licensed under the MIT license. See [LICENSE](LICENSE) for more details. The parts described below follow their original license.

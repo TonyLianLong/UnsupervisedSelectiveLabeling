@@ -16,6 +16,7 @@ import pandas as pd
 
 from .config_utils import cfg
 from .nn_utils import get_transform, normalization_kwargs_dict
+from .uslt_utils import LocalGlobalDataset
 
 def get_clip_model(name):
     import clip
@@ -352,7 +353,7 @@ class ImageNet(datasets.ImageFolder):
 #         return img, target
 
 
-def train_dataset_imagenet(transform_name, add_memory_bank_dataset=False):
+def train_dataset_imagenet(transform_name, load_local_global_dataset=False, add_memory_bank_dataset=False):
     # Uses MoCov2 aug: https://github.com/facebookresearch/moco/blob/main/main_moco.py
     if transform_name == "imagenet" or transform_name == "imagenet100":
         normalization_kwargs = normalization_kwargs_dict[transform_name]
@@ -379,11 +380,20 @@ def train_dataset_imagenet(transform_name, add_memory_bank_dataset=False):
     else:
         raise ValueError(f"Unsupported transform type: {transform_name}")
 
+    if load_local_global_dataset:
+        # Transform is set on the wrapper if load_local_global_dataset is True
+        transform_train = None
+
     train_dataset = ImageNet(
         root=cfg.DATASET.ROOT_DIR, split='train', transform=transform_train)
 
     val_dataset = datasets.ImageFolder(
         root=os.path.join(cfg.DATASET.ROOT_DIR, 'val'), transform=transform_val)
+
+    if load_local_global_dataset:
+        indices = np.load(cfg.USLT_PRETRAIN.TOPK_NEIGHBORS_PATH)
+        train_dataset = LocalGlobalDataset(
+            dataset=train_dataset, neighbors_indices=indices, num_neighbors=cfg.USLT_PRETRAIN.NUM_NEIGHBORS, transform=train_transforms)
 
     if add_memory_bank_dataset:
         # memory_bank_dataset: training dataset with validation data augmentation

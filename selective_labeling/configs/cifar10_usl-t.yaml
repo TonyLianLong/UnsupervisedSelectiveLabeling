@@ -1,0 +1,12 @@
+RUN_NAME: 'cifar10_usl-t'
+
+DATASET:
+  NAME: 'cifar10'
+  TRANSFORM_NAME: 'SCAN-cifar10'
+
+MODEL:
+  ARCH: 'ResNet18'
+  PRETRAIN_PATH: '../usl-t_pretraining/saved/cifar10/checkpoint.pth'
+
+USLT:
+  NUM_SELECTED_SAMPLES: 40

@@ -49,6 +49,16 @@ if mode == "USL":
     _C.USL.REG.HORIZON_NUM = 128
     _C.USL.REG.EXCLUDE_SAME_CLUSTER = False
 
+if mode == "USLT":
+    _C.USLT = CN()
+    _C.USLT.NUM_SELECTED_SAMPLES = 40
+    _C.USLT.HEAD_IN_USE = 0
+    _C.USLT.USE_MEAN_PROB = True
+    _C.USLT.KNN_K = 20
+    _C.USLT.NUM_PSEUDO_LABELS_PER_CLUSTER = 20
+    # Used by ImageNet only
+    _C.USLT.NUM_CLUSTERS = 3000
+
 if mode == "RANDOM":
     _C.RANDOM = CN()
     _C.RANDOM.SEEDS = [1, 2, 3, 4, 5]

@@ -1,0 +1,23 @@
+RUN_NAME: 'cifar100_usl'
+
+SKIP_SAVE: False
+RECOMPUTE_ALL: True
+RECOMPUTE_NUM_DEP: True
+
+DATASET:
+  NAME: 'cifar100'
+  TRANSFORM_NAME: 'CLD-cifar100'
+
+MODEL:
+  ARCH: 'ResNet18'
+  PRETRAIN_PATH: 'pretrained/cifar100_ckpt_epoch_200.pth'
+
+USL:
+  NUM_SELECTED_SAMPLES: 400
+  KNN_K: 400
+  SEEDS: [1, 2, 3, 4, 5]
+  REG:
+    W: 1.0
+    MOMENTUM: 0.9
+    HORIZON_DIST: 1
+    ALPHA: 1.0

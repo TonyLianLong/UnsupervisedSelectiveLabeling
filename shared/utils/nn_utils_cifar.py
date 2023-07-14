@@ -12,6 +12,8 @@ from tqdm import tqdm
 from .augment import Augment, Cutout
 from .config_utils import cfg, logger
 from .nn_utils import get_transform, normalization_kwargs_dict
+from .uslt_utils import LocalGlobalDataset
+
 
 def get_sample_info_cifar(chosen_sample_num):
     num_centroids = chosen_sample_num
@@ -141,7 +143,7 @@ class PRETRAIN_CIFAR100(datasets.CIFAR100):
         return out
 
 
-def train_dataset_cifar(transform_name):
+def train_dataset_cifar(transform_name, load_local_global_dataset=False):
     if transform_name == "FixMatch-cifar10" or transform_name == "SCAN-cifar10" or transform_name == "FixMatch-cifar100" or transform_name == "SCAN-cifar100":
         normalization_kwargs = normalization_kwargs_dict[transform_name]
         transform_train = transforms.Compose([
@@ -181,19 +183,38 @@ def train_dataset_cifar(transform_name):
     else:
         raise ValueError(f"Unsupported transform type: {transform_name}")
 
-    if cfg.DATASET.NAME == "cifar10":
-        # Transform is set on the wrapper if load_local_global_dataset is True
-        train_dataset_cifar = datasets.CIFAR10(
-            root=cfg.DATASET.ROOT_DIR, train=True, transform=transform_train, download=True)
+    if not load_local_global_dataset:
+        if cfg.DATASET.NAME == "cifar10":
+            # Transform is set on the wrapper if load_local_global_dataset is True
+            train_dataset_cifar = datasets.CIFAR10(
+                root=cfg.DATASET.ROOT_DIR, train=True, transform=transform_train, download=True)
 
-        val_dataset = datasets.CIFAR10(
-            root=cfg.DATASET.ROOT_DIR, train=False, transform=transform_val, download=True)
-    elif cfg.DATASET.NAME == "cifar100":
-        train_dataset_cifar = datasets.CIFAR100(
-            root=cfg.DATASET.ROOT_DIR, train=True, transform=transform_train, download=True)
+            val_dataset = datasets.CIFAR10(
+                root=cfg.DATASET.ROOT_DIR, train=False, transform=transform_val, download=True)
+        elif cfg.DATASET.NAME == "cifar100":
+            train_dataset_cifar = datasets.CIFAR100(
+                root=cfg.DATASET.ROOT_DIR, train=True, transform=transform_train, download=True)
 
-        val_dataset = datasets.CIFAR100(
-            root=cfg.DATASET.ROOT_DIR, train=False, transform=transform_val, download=True)
+            val_dataset = datasets.CIFAR100(
+                root=cfg.DATASET.ROOT_DIR, train=False, transform=transform_val, download=True)
+    else:
+        if cfg.DATASET.NAME == "cifar10":
+            # Transform is set on the wrapper if load_local_global_dataset is True
+            train_dataset_cifar = PRETRAIN_CIFAR10(
+                root=cfg.DATASET.ROOT_DIR, train=True, transform=None, download=True)
+
+            val_dataset = datasets.CIFAR10(
+                root=cfg.DATASET.ROOT_DIR, train=False, transform=transform_val, download=True)
+        elif cfg.DATASET.NAME == "cifar100":
+            train_dataset_cifar = PRETRAIN_CIFAR100(
+                root=cfg.DATASET.ROOT_DIR, train=True, transform=None, download=True)
+
+            val_dataset = datasets.CIFAR100(
+                root=cfg.DATASET.ROOT_DIR, train=False, transform=transform_val, download=True)
+
+        indices = np.load(cfg.USLT_PRETRAIN.TOPK_NEIGHBORS_PATH)
+        train_dataset_cifar = LocalGlobalDataset(
+            dataset=train_dataset_cifar, neighbors_indices=indices, num_neighbors=cfg.USLT_PRETRAIN.NUM_NEIGHBORS, transform=train_transforms)
 
     return train_dataset_cifar, val_dataset
 

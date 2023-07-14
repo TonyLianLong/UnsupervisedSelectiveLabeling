@@ -1,0 +1,24 @@
+RUN_NAME: 'imagenet_usl-t_0.2'
+
+SKIP_SAVE: False
+RECOMPUTE_ALL: True
+RECOMPUTE_NUM_DEP: True
+
+DATASET:
+  NAME: 'imagenet'
+  TRANSFORM_NAME: 'imagenet'
+  ROOT_DIR: '../data/ImageNet'
+
+DATALOADER:
+  WORKERS: 16
+  BATCH_SIZE: 512
+
+MODEL:
+  ARCH: 'resnet50'
+  PRETRAIN_PATH: '../usl-t_pretraining/saved/imagenet_feat_v3/checkpoint.pth'
+  BACKBONE_DIM: 2048
+
+USLT:
+  NUM_SELECTED_SAMPLES: 2911
+  USE_MEAN_PROB: False
+
