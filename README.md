@@ -337,11 +337,11 @@ These weights can be directly parsed by `selective_labeling/usl-{cifar,imagenet}
 You can obtain the EMAN-FixMatch trained model for baselines/Stratified/USL-MoCo/USL-CLIP on ImageNet [here](https://people.eecs.berkeley.edu/~longlian/files/usl_imagenet.html).
 
 ### USL-T
-| Dataset   | Models for Sample Selection |
-|-----------|-----------------------------|
-| CIFAR-10  | [Download](https://people.eecs.berkeley.edu/~longlian/files/cifar10_usl_t_3_heads.pth)                    |
-| CIFAR-100 | [Download](https://people.eecs.berkeley.edu/~longlian/files/cifar100_usl_t_3_heads.pth)                    |
-| ImageNet  | [Download](https://people.eecs.berkeley.edu/~longlian/files/imagenet_usl_t_3_heads.pth)                    |
+| Dataset   | Models for Sample Selection | Results of this re-implementation | Results in the work |
+|-----------|------------------------------------------------------------------------------------------------------------|-----------|-----------|
+| CIFAR-10  | [Download](https://people.eecs.berkeley.edu/~longlian/files/cifar10_usl_t_3_heads.pth)                     | SimCLR-CLD: 76.1 | SimCLR-CLD: 76.1 |
+| CIFAR-100 | [Download](https://people.eecs.berkeley.edu/~longlian/files/cifar100_usl_t_3_heads.pth)                    | SimCLR-CLD: 36.1 | SimCLR-CLD: 36.9 |
+| ImageNet  | [Download](https://people.eecs.berkeley.edu/~longlian/files/imagenet_usl_t_3_heads.pth)                    | SimCLR: 42.0 | SimCLR: 41.3 |
 
 These weights can be directly parsed by `selective_labeling/usl-t-{cifar,imagenet}.py` to get selections. The selection should mostly match with the selections released (besides slight variations due to indeterministic operations in GPUs).
 
